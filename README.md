@@ -1,5 +1,9 @@
 # AI 自动解说工作台 · ai-live-commentary
 
+[![CI](https://github.com/chenyuwebwawa/ai-live-commentary/actions/workflows/ci.yml/badge.svg)](https://github.com/chenyuwebwawa/ai-live-commentary/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+
 > 给任意视频源配一个 AI 解说员。**在网页里挑「视觉理解模型」+「语音合成模型」**，接上直播流 / 摄像头 / 屏幕 / 本地视频，
 > 它就会像解说员一样边看边说 —— 文字实时滚动，同时用中文音色播报出来。
 
