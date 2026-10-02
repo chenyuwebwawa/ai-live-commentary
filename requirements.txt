@@ -1,0 +1,14 @@
+# AI 自动解说工作台 —— 基础依赖
+# 安装： D:\AI\live-commentary-venv\Scripts\python.exe -m pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+fastapi>=0.115
+uvicorn[standard]>=0.30
+httpx>=0.27
+edge-tts>=7.0.0
+pillow>=10.0
+numpy>=1.26
+python-multipart>=0.0.9
+imageio-ffmpeg>=0.5.1        # 自带 ffmpeg 可执行文件，免手动安装
+
+# ---- 可选：本地 transformers 视觉后端（8GB 显存建议配 4bit 量化）----
+# torch torchvision --index-url https://download.pytorch.org/whl/cu126
+# transformers>=4.52.4  accelerate  qwen-vl-utils  bitsandbytes  pillow-heif

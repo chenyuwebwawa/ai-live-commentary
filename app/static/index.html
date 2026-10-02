@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI 自动解说工作台</title>
+<link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="dot"></span> AI 自动解说工作台</div>
+  <div class="topbar-right">
+    <span id="status-pill" class="pill pill-idle">未开始</span>
+    <button id="btn-start" class="btn btn-primary">▶ 开始解说</button>
+    <button id="btn-stop" class="btn btn-ghost" disabled>■ 停止</button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ============ 左侧：配置 ============ -->
+  <aside class="panel config">
+    <div class="tabs">
+      <button class="tab active" data-tab="vlm">视觉模型</button>
+      <button class="tab" data-tab="tts">语音合成</button>
+      <button class="tab" data-tab="source">视频源</button>
+      <button class="tab" data-tab="style">解说风格</button>
+    </div>
+
+    <!-- 视觉模型 -->
+    <section class="tabpane active" data-pane="vlm">
+      <label class="field">
+        <span>后端类型</span>
+        <select id="vlm-provider">
+          <option value="ollama">本地 Ollama（已装好，免 Key，推荐先试）</option>
+          <option value="openai">云端 API（OpenAI 兼容，中文更好）</option>
+          <option value="transformers">本地 transformers（占显存）</option>
+          <option value="mock">自检模式（不调用模型，只验证链路）</option>
+        </select>
+      </label>
+
+      <div data-when="vlm=openai">
+        <div class="hint" id="preset-hint"></div>
+        <label class="field"><span>Base URL</span>
+          <input id="vlm-base-url" type="text" placeholder="https://dashscope.aliyuncs.com/compatible-mode/v1" />
+        </label>
+        <div class="field-row">
+          <label class="field"><span>API Key</span>
+            <input id="vlm-api-key" type="password" placeholder="sk-..." autocomplete="off" />
+          </label>
+        </div>
+        <label class="field"><span>模型 ID</span>
+          <input id="vlm-model" type="text" placeholder="qwen3-vl-plus" list="vlm-models" />
+          <datalist id="vlm-models">
+            <option value="qwen3-vl-plus"></option>
+            <option value="qwen3-vl-flash"></option>
+            <option value="glm-5.3-flash"></option>
+            <option value="Qwen/Qwen3-VL-8B-Instruct"></option>
+          </datalist>
+        </label>
+        <label class="field"><span>额外参数 (JSON，可选)</span>
+          <input id="vlm-extra-body" type="text" placeholder='{"enable_thinking": false}' />
+        </label>
+      </div>
+
+      <div data-when="vlm=ollama">
+        <label class="field"><span>Ollama 地址</span>
+          <input id="vlm-ollama-url" type="text" placeholder="http://127.0.0.1:11434" />
+        </label>
+        <label class="field"><span>模型</span>
+          <input id="vlm-ollama-model" type="text" placeholder="qwen3-vl:4b-instruct" list="ollama-models" />
+          <datalist id="ollama-models"></datalist>
+        </label>
+        <button class="btn btn-small" id="btn-ollama-scan">检测本机 Ollama 模型</button>
+      </div>
+
+      <div data-when="vlm=transformers">
+        <label class="field"><span>模型路径 / HF 仓库</span>
+          <input id="vlm-local-path" type="text" placeholder="Qwen/Qwen3-VL-4B-Instruct" />
+        </label>
+        <label class="check"><input id="vlm-4bit" type="checkbox" /> 4bit 量化加载（8GB 显存必须开）</label>
+        <label class="field"><span>device_map</span>
+          <input id="vlm-device" type="text" placeholder="cuda" />
+        </label>
+        <div class="hint">首次运行会自动下载权重；国内已默认使用 hf-mirror.com 镜像。</div>
+      </div>
+
+      <div class="field-row">
+        <label class="field"><span>temperature</span><input id="vlm-temperature" type="number" step="0.1" min="0" max="2" /></label>
+        <label class="field"><span>最大输出 tokens</span><input id="vlm-max-tokens" type="number" min="16" max="512" /></label>
+        <label class="field"><span>超时(秒)</span><input id="vlm-timeout" type="number" min="5" max="600" /></label>
+      </div>
+      <button class="btn btn-small" id="btn-test-vlm">测试连接</button>
+      <div class="test-out" id="vlm-test-out"></div>
+    </section>
+
+    <!-- 语音 -->
+    <section class="tabpane" data-pane="tts">
+      <label class="check"><input id="tts-speak" type="checkbox" /> 开启语音播报</label>
+      <label class="field"><span>后端</span>
+        <select id="tts-provider">
+          <option value="edge">edge-tts（免费中文音色）</option>
+          <option value="openai">OpenAI 兼容 TTS API</option>
+          <option value="none">关闭（只要文字）</option>
+        </select>
+      </label>
+      <div data-when="tts=edge">
+        <label class="field"><span>音色</span>
+          <select id="tts-voice"></select>
+        </label>
+        <div class="field-row">
+          <label class="field"><span>语速</span><input id="tts-rate" type="text" placeholder="+12%" /></label>
+          <label class="field"><span>音调</span><input id="tts-pitch" type="text" placeholder="+0Hz" /></label>
+          <label class="field"><span>音量</span><input id="tts-volume" type="text" placeholder="+0%" /></label>
+        </div>
+      </div>
+      <div data-when="tts=openai">
+        <label class="field"><span>Base URL</span><input id="tts-base-url" type="text" /></label>
+        <label class="field"><span>API Key</span><input id="tts-api-key" type="password" autocomplete="off" /></label>
+        <div class="field-row">
+          <label class="field"><span>模型</span><input id="tts-model" type="text" /></label>
+          <label class="field"><span>音色</span><input id="tts-oai-voice" type="text" placeholder="alloy" /></label>
+        </div>
+      </div>
+      <button class="btn btn-small" id="btn-test-tts">试听</button>
+      <div class="test-out" id="tts-test-out"></div>
+    </section>
+
+    <!-- 视频源 -->
+    <section class="tabpane" data-pane="source">
+      <label class="field"><span>输入类型</span>
+        <select id="src-type">
+          <option value="stream">直播流 RTMP / HLS / HTTP-FLV</option>
+          <option value="camera">摄像头</option>
+          <option value="screen">屏幕捕获</option>
+          <option value="file">本地视频文件</option>
+        </select>
+      </label>
+
+      <div data-when="src=stream">
+        <label class="field"><span>流地址</span>
+          <input id="src-stream-url" type="text" placeholder="rtmp://live-push.../live/stream 或 http://.../index.m3u8" />
+        </label>
+        <div class="hint">支持 rtmp:// · http(s)://*.m3u8 · *.flv · rtsp://（自动走 TCP）</div>
+      </div>
+
+      <div data-when="src=camera">
+        <label class="field"><span>摄像头设备</span>
+          <select id="src-device"></select>
+        </label>
+        <button class="btn btn-small" id="btn-scan-cam">重新扫描设备</button>
+      </div>
+
+      <div data-when="src=screen">
+        <label class="field"><span>区域（留空=整个桌面）</span>
+          <input id="src-screen-region" type="text" placeholder="1920x1080+0+0" />
+        </label>
+      </div>
+
+      <div data-when="src=file">
+        <label class="field"><span>视频文件</span>
+          <input id="src-file-path" type="text" placeholder="D:\videos\demo.mp4" />
+        </label>
+        <input id="src-file-upload" type="file" accept="video/*" />
+        <label class="check"><input id="src-realtime" type="checkbox" /> 按原速播放（模拟直播节奏）</label>
+        <label class="check"><input id="src-loop" type="checkbox" /> 循环播放</label>
+      </div>
+    </section>
+
+    <!-- 解说风格 -->
+    <section class="tabpane" data-pane="style">
+      <label class="field"><span>风格预设</span>
+        <select id="cm-style"></select>
+      </label>
+      <label class="field"><span>自定义风格提示词</span>
+        <textarea id="cm-custom-prompt" rows="4" placeholder="仅在风格选“自定义”时生效"></textarea>
+      </label>
+      <div class="field-row">
+        <label class="field"><span>解说间隔(秒)</span><input id="cm-interval" type="number" min="1" max="120" step="0.5" /></label>
+        <label class="field"><span>每次送几帧</span><input id="cm-frames" type="number" min="1" max="16" /></label>
+      </div>
+      <div class="field-row">
+        <label class="field"><span>抓帧帧率</span><input id="cm-capture-fps" type="number" min="1" max="30" step="1" /></label>
+        <label class="field"><span>送模型高度(px)</span><input id="cm-frame-height" type="number" min="128" max="1080" step="32" /></label>
+      </div>
+      <div class="field-row">
+        <label class="field"><span>历史去重条数</span><input id="cm-history" type="number" min="0" max="20" /></label>
+        <label class="check"><input id="cm-dedupe" type="checkbox" /> 跳过重复解说</label>
+      </div>
+      <div class="hint">间隔越短越"实时"，但 API 调用量和显存/延迟压力越大。云端 API 建议 3-6 秒；本地 7B 模型建议 8 秒以上。</div>
+    </section>
+
+    <div class="config-actions">
+      <button class="btn btn-small" id="btn-save">保存配置</button>
+      <span class="save-note" id="save-note"></span>
+    </div>
+  </aside>
+
+  <!-- ============ 右侧：运行画面 ============ -->
+  <main class="panel stage">
+    <div class="preview">
+      <img id="preview-img" alt="等待画面…" />
+      <div class="preview-empty" id="preview-empty">尚未开始，画面会显示在这里</div>
+      <div class="preview-meta"><span id="preview-time">--</span> · 帧 <span id="frame-count">0</span></div>
+    </div>
+
+    <div class="feed-head">
+      <span>实时解说</span>
+      <div class="feed-tools">
+        <label class="check small"><input id="audio-enabled" type="checkbox" checked /> 播放语音</label>
+        <button class="btn btn-tiny" id="btn-export-txt">导出文案</button>
+        <button class="btn btn-tiny" id="btn-export-srt">导出 SRT</button>
+        <button class="btn btn-tiny" id="btn-clear">清空</button>
+      </div>
+    </div>
+    <div class="feed" id="feed">
+      <div class="feed-empty">开始后，解说会一条条出现在这里，并自动配音。</div>
+    </div>
+  </main>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

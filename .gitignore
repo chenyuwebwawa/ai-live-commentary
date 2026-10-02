@@ -1,0 +1,30 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ---- 运行期产生的文件 ----
+# config.json 由网页「保存配置」生成，内含 API Key，绝对不要提交
+config.json
+uploads/
+logs/
+*.log
+
+# ---- 测试素材 ----
+# 第三方版权视频不入库，见 samples/README.md
+samples/*.mp4
+samples/*.mkv
+samples/*.mov
+samples/*.flv
+
+# ---- 本机专属笔记 ----
+LOCAL.md
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

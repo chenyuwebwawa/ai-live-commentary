@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Byte-compile every module
+        run: python -m compileall -q app tests
+
+      - name: Import the app
+        run: python -c "from app import main, capture, config, pipeline, tts, vlm; print('imports OK')"
+
+      - name: Unit tests (offline)
+        run: python tests/unit_test.py
+
+      - name: Check ffmpeg is discoverable
+        run: python -c "from app.capture import ffmpeg_path, ffmpeg_version; print(ffmpeg_path()); print(ffmpeg_version())"
